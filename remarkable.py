@@ -25,6 +25,9 @@ def make_parser():
         help="code generated via https://my.remarkable.com/#desktop",
     )
 
+    parser_token = subparsers.add_parser("token")
+    parser_token.set_defaults(func=cmd_token)
+
     parser_upload = subparsers.add_parser("upload")
     parser_upload.set_defaults(func=cmd_upload)
     parser_upload.add_argument("--file", "-f", required=True)
@@ -50,6 +53,10 @@ def cmd_login(args):
     Path("device-token").write_text(response.text.strip())
 
 
+def cmd_token(args):
+    print(get_user_token())
+
+
 def cmd_upload(args):
     data = Path(args.file).read_bytes()
 
@@ -64,14 +71,7 @@ def cmd_upload(args):
         "file_name": Path(args.file).name,
     }
 
-    response = requests.post(
-        "https://webapp.cloud.remarkable.com/token/json/2/user/new",
-        headers={
-            "Authorization": "Bearer %s" % Path("device-token").read_text().strip()
-        },
-    )
-    response.raise_for_status()
-    user_token = response.text.strip()
+    user_token = get_user_token()
 
     response = requests.post(
         "https://web.cloud.remarkable.com/doc/v2/files",
@@ -83,6 +83,17 @@ def cmd_upload(args):
         data=data,
     )
     response.raise_for_status()
+
+
+def get_user_token():
+    response = requests.post(
+        "https://webapp.cloud.remarkable.com/token/json/2/user/new",
+        headers={
+            "Authorization": "Bearer %s" % Path("device-token").read_text().strip()
+        },
+    )
+    response.raise_for_status()
+    return response.text.strip()
 
 
 if __name__ == "__main__":
